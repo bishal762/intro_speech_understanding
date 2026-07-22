@@ -1,15 +1,19 @@
-import gtts, speech_recognition, librosa, soundfile
+import gtts
+import speech_recognition as sr
+import librosa
+import soundfile as sf
 
 def synthesize(text, lang, filename):
     '''
     Use gtts.gTTS(text=text, lang=lang) to synthesize speech, then write it to filename.
-    
+
     @params:
     text (str) - the text you want to synthesize
     lang (str) - the language in which you want to synthesize it
     filename (str) - the filename in which it should be saved
     '''
-    raise RuntimeError("You need to write this!")
+    tts = gtts.gTTS(text=text, lang=lang)
+    tts.save(filename)
 
 def make_a_corpus(texts, languages, filenames):
     '''
@@ -24,5 +28,29 @@ def make_a_corpus(texts, languages, filenames):
     @return:
     recognized_texts - list of the strings that were recognized from each file
     '''
-    raise RuntimeError("You need to write this!")
-        
+    recognizer = sr.Recognizer()
+    recognized_texts = []
+
+    for text, lang, root in zip(texts, languages, filenames):
+        mp3_file = root + ".mp3"
+        wav_file = root + ".wav"
+
+        # Create MP3
+        synthesize(text, lang, mp3_file)
+
+        # Convert MP3 to WAV
+        audio, sample_rate = librosa.load(mp3_file, sr=None)
+        sf.write(wav_file, audio, sample_rate)
+
+        # Recognize speech
+        with sr.AudioFile(wav_file) as source:
+            audio_data = recognizer.record(source)
+
+        try:
+            recognized = recognizer.recognize_google(audio_data, language=lang)
+        except (sr.UnknownValueError, sr.RequestError):
+            recognized = ""
+
+        recognized_texts.append(recognized)
+
+    return recognized_texts
